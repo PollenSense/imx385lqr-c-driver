@@ -16,7 +16,7 @@
 			#size-cells = <0>;
 			status = "okay";
 
-			#include "imx290_327.dtsi"
+			#include "imx385_327.dtsi"
 		};
 	};
 

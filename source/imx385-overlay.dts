@@ -4,25 +4,25 @@
 /plugin/;
 
 #include <dt-bindings/gpio/gpio.h>
-#include "imx290_327-overlay.dtsi"
+#include "imx385_327-overlay.dtsi"
 
 /{
 	compatible = "brcm,bcm2835";
 
 	// Fragment numbers deliberately high to avoid conflicts with the
-	// included imx290_327 overlay file.
+	// included imx385_327 overlay file.
 
 	fragment@101 {
 		target = <&cam_node>;
 		__overlay__ {
-			compatible = "sony,imx290";
+			compatible = "sony,imx385";
 		};
 	};
 
 	fragment@102 {
 		target = <&cam_node>;
 		__dormant__ {
-			compatible = "sony,imx290-mono";
+			compatible = "sony,imx385-mono";
 		};
 	};
 
