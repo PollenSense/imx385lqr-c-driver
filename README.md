@@ -3,6 +3,7 @@
 This camera driver is based off of the **IMX290** camera driver, with only certain small values changed.
 
 ## Device Tree Source Files
+
 Device tree overlay based on IMX290 dts files form Raspberry Pi Kernel, which uses 3 files:
 imx290-overlay.dts
 imx290_327.dtsi
