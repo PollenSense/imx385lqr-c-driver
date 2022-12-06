@@ -1,6 +1,8 @@
 # IMX385 Camera Driver
 
-This camera driver is based off of the **IMX290** camera driver, with only certain small values changed.
+This camera driver is based off of the **IMX290** camera driver
+
+Targets kernel version 5.10.92
 
 ## Device Tree Source Files
 
