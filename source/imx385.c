@@ -472,6 +472,8 @@ static int imx290_set_ctrl(struct v4l2_ctrl *ctrl)
 					     struct imx290, ctrls);
 	int ret = 0;
 
+	printk("%s() %d\r\n", __func__, __LINE__);
+
 	/* V4L2 controls values will be applied only when power is already up */
 	if (!pm_runtime_get_if_in_use(imx290->dev))
 		return 0;
@@ -507,6 +509,8 @@ static int imx290_set_ctrl(struct v4l2_ctrl *ctrl)
 	}
 
 	pm_runtime_put(imx290->dev);
+
+	printk("%s() %d\r\n", __func__, __LINE__);
 
 	return ret;
 }
@@ -556,6 +560,8 @@ static int imx290_get_fmt(struct v4l2_subdev *sd,
 	struct imx290 *imx290 = to_imx290(sd);
 	struct v4l2_mbus_framefmt *framefmt;
 
+	printk("%s() %d\r\n", __func__, __LINE__);
+
 	mutex_lock(&imx290->lock);
 
 	if (fmt->which == V4L2_SUBDEV_FORMAT_TRY)
@@ -567,6 +573,8 @@ static int imx290_get_fmt(struct v4l2_subdev *sd,
 	fmt->format = *framefmt;
 
 	mutex_unlock(&imx290->lock);
+
+	printk("%s() %d\r\n", __func__, __LINE__);
 
 	return 0;
 }
@@ -603,6 +611,8 @@ static int imx290_set_fmt(struct v4l2_subdev *sd,
 	const struct imx290_mode *mode;
 	struct v4l2_mbus_framefmt *format;
 	unsigned int i;
+
+	printk("%s() %d\r\n", __func__, __LINE__);
 
 	mutex_lock(&imx290->lock);
 
@@ -641,6 +651,8 @@ static int imx290_set_fmt(struct v4l2_subdev *sd,
 	*format = fmt->format;
 
 	mutex_unlock(&imx290->lock);
+
+	printk("%s() %d\r\n", __func__, __LINE__);
 
 	return 0;
 }
@@ -763,6 +775,8 @@ static int imx290_set_stream(struct v4l2_subdev *sd, int enable)
 	struct imx290 *imx290 = to_imx290(sd);
 	int ret = 0;
 
+	printk("%s() %d\r\n", __func__, __LINE__);
+
 	if (enable) {
 		ret = pm_runtime_get_sync(imx290->dev);
 		if (ret < 0) {
@@ -783,6 +797,7 @@ static int imx290_set_stream(struct v4l2_subdev *sd, int enable)
 
 unlock_and_return:
 
+	printk("%s() %d\r\n", __func__, __LINE__);
 	return ret;
 }
 
@@ -942,6 +957,8 @@ static int imx290_probe(struct i2c_client *client)
 	u32 xclk_freq;
 	s64 fq;
 	int ret;
+
+	printk("%s() %d\r\n", __func__, __LINE__);
 
 	imx290 = devm_kzalloc(dev, sizeof(*imx290), GFP_KERNEL);
 	if (!imx290)
@@ -1110,6 +1127,7 @@ static int imx290_probe(struct i2c_client *client)
 
 	v4l2_fwnode_endpoint_free(&ep);
 
+	printk("%s() %d\r\n", __func__, __LINE__);
 	return 0;
 
 free_entity:
