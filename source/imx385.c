@@ -1161,7 +1161,7 @@ static int imx290_remove(struct i2c_client *client)
 }
 
 static const struct of_device_id imx290_of_match[] = {
-	{ .compatible = "sony,imx290" },
+	{ .compatible = "sony,imx390" },
 	{ /* sentinel */ }
 };
 MODULE_DEVICE_TABLE(of, imx290_of_match);
