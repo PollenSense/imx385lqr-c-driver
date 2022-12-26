@@ -99,7 +99,7 @@
 			camera-clk {
 				compatible = "fixed-clock";
 				#clock-cells = < 0x00 >;
-				clock-frequency = < 0x16e3600 >;37125000
+				clock-frequency = < 0x16e3600 >;
 				phandle = < 0x01 >;
 			};
 		};
