@@ -14,7 +14,7 @@
 			status = "okay";
 
 			imx385: imx385@1a {
-				compatible = "onnn,imx385";
+				compatible = "sony,imx385";
 				reg = <0x1a>;
 				status = "okay";
 
