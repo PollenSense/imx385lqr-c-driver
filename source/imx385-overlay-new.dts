@@ -1,0 +1,100 @@
+// SPDX-License-Identifier: GPL-2.0-only
+// Definitions for imx385 camera module on VC I2C bus
+/dts-v1/;
+/plugin/;
+
+/{
+	compatible = "brcm,bcm2835";
+
+	i2c_frag: fragment@0 {
+		target = <&i2c_csi_dsi>;
+		__overlay__ {
+			#address-cells = <1>;
+			#size-cells = <0>;
+			status = "okay";
+
+			imx385: imx385@1a {
+				compatible = "onnn,imx385";
+				reg = <0x1a>;
+				status = "okay";
+
+				clocks = <&cam1_clk>;
+				clock-names = "xclk";
+				clock-frequency = <37125000>;
+
+				vdda-supply = <&cam1_reg>;	/* 2.8v */
+				vdddo-supply = <&cam_dummy_reg>;	/* 1.8v */
+				vddd-supply = <&cam_dummy_reg>;	/* 1.5v */
+
+				rotation = <0>;
+				orientation = <2>;
+
+				port {
+					imx385_0: endpoint {
+						remote-endpoint = <&csi1_ep>;
+						clock-lanes = <0>;
+						data-lanes = <1 2>;
+						clock-noncontinuous;
+
+						link-frequencies =
+							/bits/ 64 <445500000 297000000>;
+					};
+				};
+			};
+		};
+	};
+
+	csi_frag: fragment@1 {
+		target = <&csi1>;
+		csi: __overlay__ {
+			status = "okay";
+
+			port {
+				csi1_ep: endpoint {
+					remote-endpoint = <&imx385_0>;
+					data-lanes = <1 2>;
+				};
+			};
+		};
+	};
+
+	fragment@2 {
+		target = <&i2c0if>;
+		__overlay__ {
+			status = "okay";
+		};
+	};
+
+	fragment@3 {
+		target = <&i2c0mux>;
+		__overlay__ {
+			status = "okay";
+		};
+	};
+
+	reg_frag: fragment@4 {
+		target = <&cam1_reg>;
+		__overlay__ {
+			startup-delay-us = <20000>;
+		};
+	};
+
+	clk_frag: fragment@5 {
+		target = <&cam1_clk>;
+		__overlay__ {
+			status = "okay";
+			clock-frequency = <25000000>;
+		};
+	};
+
+	__overrides__ {
+		rotation = <&imx385>,"rotation:0";
+		orientation = <&imx385>,"orientation:0";
+		cam0 = <&i2c_frag>, "target:0=",<&i2c_vc>,
+		       <&csi_frag>, "target:0=",<&csi0>,
+		       <&reg_frag>, "target:0=",<&cam0_reg>,
+		       <&clk_frag>, "target:0=",<&cam0_clk>,
+		       <&imx385>, "clocks:0=",<&cam0_clk>,
+		       <&imx385>, "avdd-supply:0=",<&cam0_reg>;
+	};
+};
