@@ -1419,9 +1419,9 @@
 			clock-frequency = <0x186a0>;
 			phandle = <0x34>;
 
-			imx385@1a {
+			imx385@41 {
 				compatible = "sony,imx385";
-				reg = <0x1a>;
+				reg = <0x41>;
 				status = "okay";
 				clocks = <&cam1_clk>;
 				clock-names = "xclk";
