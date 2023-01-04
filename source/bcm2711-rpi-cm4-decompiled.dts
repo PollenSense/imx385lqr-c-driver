@@ -1249,7 +1249,7 @@
 			clocks = <0x08 0x14>;
 			#address-cells = <0x01>;
 			#size-cells = <0x00>;
-			status = "disabled";
+			status = "okay";
 			clock-frequency = <0x186a0>;
 			phandle = <0x10>;
 		};
@@ -1260,7 +1260,7 @@
 			#size-cells = <0x00>;
 			i2c-parent = <0x10>;
 			pinctrl-names = "i2c0\0i2c_csi_dsi";
-			status = "disabled";
+			status = "okay";
 			pinctrl-0 = <0x11>;
 			pinctrl-1 = <0x12>;
 			phandle = <0x33>;
@@ -1277,6 +1277,32 @@
 				#address-cells = <0x01>;
 				#size-cells = <0x00>;
 				phandle = <0xb3>;
+			imx385@1a {
+				compatible = "sony,imx385";
+				reg = <0x1a>;
+				status = "okay";
+				clocks = <&cam1_clk>;
+				clock-names = "xclk";
+				clock-frequency = <0x2367b88>;
+
+				vdda-supply = <&cam1_reg>;	/* 2.8v */
+				vdddo-supply = <&cam_dummy_reg>;	/* 1.8v */
+				vddd-supply = <&cam_dummy_reg>;	/* 1.5v */
+				rotation = <0x00>;
+				orientation = <0x02>;
+
+				port {
+
+					imx385_0: endpoint {
+						remote-endpoint = <&csi1_ep>;
+						clock-lanes = <0x00>;
+						data-lanes = <0x01 0x02>;
+						clock-noncontinuous;
+						link-frequencies = <0x00 0x1a8dca60 0x00 0x11b3dc40>;
+					};
+				};
+			};
+
 			};
 		};
 
@@ -1419,31 +1445,6 @@
 			clock-frequency = <0x186a0>;
 			phandle = <0x34>;
 
-			imx385@41 {
-				compatible = "sony,imx385";
-				reg = <0x41>;
-				status = "okay";
-				clocks = <&cam1_clk>;
-				clock-names = "xclk";
-				clock-frequency = <0x2367b88>;
-
-				vdda-supply = <&cam1_reg>;	/* 2.8v */
-				vdddo-supply = <&cam_dummy_reg>;	/* 1.8v */
-				vddd-supply = <&cam_dummy_reg>;	/* 1.5v */
-				rotation = <0x00>;
-				orientation = <0x02>;
-
-				port {
-
-					imx385_0: endpoint {
-						remote-endpoint = <&csi1_ep>;
-						clock-lanes = <0x00>;
-						data-lanes = <0x01 0x02>;
-						clock-noncontinuous;
-						link-frequencies = <0x00 0x1a8dca60 0x00 0x11b3dc40>;
-					};
-				};
-			};
 		};
 
 		usb@7e980000 {
