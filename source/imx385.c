@@ -25,6 +25,7 @@
 #define IMX385_STANDBY 0x3000 //
 #define IMX385_REGHOLD 0x3001//
 #define IMX385_XMSTA 0x3002//
+#define IMX385_RESET 0x3003//
 #define IMX385_FR_FDG_SEL 0x3009//
 #define IMX385_BLKLEVEL_LOW 0x300a//
 #define IMX385_BLKLEVEL_HIGH 0x300b//
@@ -111,164 +112,105 @@ static const char * const imx385_test_pattern_menu[] = {
 	"000/555h Toggle Pattern",
 };
 
-static const struct imx385_regval imx385_global_init_settings[] = {
-	{ 0x3007, 0x00 },
-	{ 0x3018, 0x65 },
-	{ 0x3019, 0x04 },
-	{ 0x301a, 0x00 },
-	{ 0x3444, 0x20 },
-	{ 0x3445, 0x25 },
-	{ 0x303a, 0x0c },
-	{ 0x3040, 0x00 },
-	{ 0x3041, 0x00 },
-	{ 0x303c, 0x00 },
-	{ 0x303d, 0x00 },
-	{ 0x3042, 0x9c },
-	{ 0x3043, 0x07 },
-	{ 0x303e, 0x49 },
-	{ 0x303f, 0x04 },
-	{ 0x304b, 0x0a },
-	{ 0x300f, 0x00 },
-	{ 0x3010, 0x21 },
-	{ 0x3012, 0x64 },
-	{ 0x3016, 0x09 },
-	{ 0x3070, 0x02 },
-	{ 0x3071, 0x11 },
-	{ 0x309b, 0x10 },
-	{ 0x309c, 0x22 },
-	{ 0x30a2, 0x02 },
-	{ 0x30a6, 0x20 },
-	{ 0x30a8, 0x20 },
-	{ 0x30aa, 0x20 },
-	{ 0x30ac, 0x20 },
-	{ 0x30b0, 0x43 },
-	{ 0x3119, 0x9e },
-	{ 0x311c, 0x1e },
-	{ 0x311e, 0x08 },
-	{ 0x3128, 0x05 },
-	{ 0x313d, 0x83 },
-	{ 0x3150, 0x03 },
-	{ 0x317e, 0x00 },
-	{ 0x32b8, 0x50 },
-	{ 0x32b9, 0x10 },
-	{ 0x32ba, 0x00 },
-	{ 0x32bb, 0x04 },
-	{ 0x32c8, 0x50 },
-	{ 0x32c9, 0x10 },
-	{ 0x32ca, 0x00 },
-	{ 0x32cb, 0x04 },
-	{ 0x332c, 0xd3 },
-	{ 0x332d, 0x10 },
-	{ 0x332e, 0x0d },
-	{ 0x3358, 0x06 },
-	{ 0x3359, 0xe1 },
-	{ 0x335a, 0x11 },
-	{ 0x3360, 0x1e },
-	{ 0x3361, 0x61 },
-	{ 0x3362, 0x10 },
-	{ 0x33b0, 0x50 },
-	{ 0x33b2, 0x1a },
-	{ 0x33b3, 0x04 },
-};
+static const struct imx385_regval imx385_10bit_settings[] = {
+	{ 0x3005, 0x00 },
+	{ 0x337d, 0x0A },
+	{ 0x337e, 0x0A },
 
-static const struct imx385_regval imx385_1080p_settings[] = {
-	/* mode settings */
-	{ 0x3007, 0x00 },
-	{ 0x303a, 0x0c },
-	{ 0x3414, 0x0a },
-	{ 0x3472, 0x80 },
-	{ 0x3473, 0x07 },
-	{ 0x3418, 0x38 },
-	{ 0x3419, 0x04 },
-	{ 0x3012, 0x64 },
-	{ 0x3013, 0x00 },
-	{ 0x305c, 0x18 },
-	{ 0x305d, 0x03 },
-	{ 0x305e, 0x20 },
-	{ 0x305f, 0x01 },
-	{ 0x315e, 0x1a },
-	{ 0x3164, 0x1a },
-	{ 0x3480, 0x49 },
-	/* data rate settings */
-	{ 0x3405, 0x10 },
-	{ 0x3446, 0x57 },
-	{ 0x3447, 0x00 },
-	{ 0x3448, 0x37 },
-	{ 0x3449, 0x00 },
-	{ 0x344a, 0x1f },
-	{ 0x344b, 0x00 },
-	{ 0x344c, 0x1f },
-	{ 0x344d, 0x00 },
-	{ 0x344e, 0x1f },
-	{ 0x344f, 0x00 },
-	{ 0x3450, 0x77 },
-	{ 0x3451, 0x00 },
-	{ 0x3452, 0x1f },
-	{ 0x3453, 0x00 },
-	{ 0x3454, 0x17 },
-	{ 0x3455, 0x00 },
-};
-
-static const struct imx385_regval imx385_720p_settings[] = {
-	/* mode settings */
-	{ 0x3007, 0x10 },
-	{ 0x303a, 0x06 },
-	{ 0x3414, 0x04 },
-	{ 0x3472, 0x00 },
-	{ 0x3473, 0x05 },
-	{ 0x3418, 0xd0 },
-	{ 0x3419, 0x02 },
-	{ 0x3012, 0x64 },
-	{ 0x3013, 0x00 },
-	{ 0x305c, 0x20 },
+	/* INCK Settings */
+	{ 0x305c, 0x28 },
 	{ 0x305d, 0x00 },
 	{ 0x305e, 0x20 },
-	{ 0x305f, 0x01 },
-	{ 0x315e, 0x1a },
-	{ 0x3164, 0x1a },
-	{ 0x3480, 0x49 },
-	/* data rate settings */
-	{ 0x3405, 0x10 },
-	{ 0x3446, 0x4f },
-	{ 0x3447, 0x00 },
-	{ 0x3448, 0x2f },
-	{ 0x3449, 0x00 },
-	{ 0x344a, 0x17 },
-	{ 0x344b, 0x00 },
-	{ 0x344c, 0x17 },
-	{ 0x344d, 0x00 },
-	{ 0x344e, 0x17 },
-	{ 0x344f, 0x00 },
-	{ 0x3450, 0x57 },
-	{ 0x3451, 0x00 },
-	{ 0x3452, 0x17 },
-	{ 0x3453, 0x00 },
-	{ 0x3454, 0x17 },
-	{ 0x3455, 0x00 },
-};
+	{ 0x305f, 0x00 },
 
-static const struct imx385_regval imx385_10bit_settings[] = {
-	{ 0x3005, 0x00},
-	{ 0x3046, 0x00},
-	{ 0x3129, 0x1d},
-	{ 0x317c, 0x12},
-	{ 0x31ec, 0x37},
-	{ 0x3441, 0x0a},
-	{ 0x3442, 0x0a},
-	{ 0x300a, 0x3c},
-	{ 0x300b, 0x00},
+	/* Black level */
+	{ 0x300a, 0x3C },
+	{ 0x300b, 0x00 },
+
+	/* Global Timings */
+	{ 0x3382, 0x5f },
+	{ 0x3383, 0x1f },
+	{ 0x3384, 0x37 },
+	{ 0x3385, 0x1f },
+	{ 0x3386, 0x17 },
+	{ 0x3387, 0x17 },
+	{ 0x3388, 0x67 },
+	{ 0x3389, 0x27 },
+
+	{ 0x336b, 0x37 },
+
+	{ 0x3344, 0x10 },
+
 };
 
 static const struct imx385_regval imx385_12bit_settings[] = {
 	{ 0x3005, 0x01 },
-	{ 0x3046, 0x01 },
-	{ 0x3129, 0x00 },
-	{ 0x317c, 0x00 },
-	{ 0x31ec, 0x0e },
-	{ 0x3441, 0x0c },
-	{ 0x3442, 0x0c },
-	{ 0x300a, 0xf0 },
+	{ 0x337d, 0x0C },
+	{ 0x337e, 0x0C },
+
+	/* INCK Settings */
+	{ 0x305c, 0x18 },
+	{ 0x305d, 0x00 },
+	{ 0x305e, 0x20 },
+	{ 0x305f, 0x00 },
+
+	/* Black level */
+	{ 0x300a, 0xF0 },
 	{ 0x300b, 0x00 },
+
+	/* Global Timings */
+	{ 0x3382, 0x67 },
+	{ 0x3383, 0x1f },
+	{ 0x3384, 0x3f },
+	{ 0x3385, 0x27 },
+	{ 0x3386, 0x1f },
+	{ 0x3387, 0x17 },
+	{ 0x3388, 0x77 },
+	{ 0x3389, 0x27 },
+
+	{ 0x336b, 0x3f },
+
+	{ 0x3344, 0x00 },
+
+};
+
+static const struct imx385_regval imx385_1080p30_settings[] = {
+	{ 0x3007, 0x10 },
+	{ 0x3009, 0x02 },
+	{ 0x3012, 0x2c },
+	{ 0x3013, 0x01 },
+	{ 0x3014, 0x07 }, //Gain
+	{ 0x3018, 0x47 },
+	{ 0x3019, 0x05 },
+	{ 0x301b, 0x30 },
+	{ 0x301c, 0x11 },
+	{ 0x3020, 0x02 }, //SHS1
+	{ 0x3021, 0x00 }, //SHS1
+	{ 0x3046, 0x30 },
+	{ 0x3047, 0x38 },
+	{ 0x3049, 0x0a },
+	{ 0x3054, 0x66 },
+	{ 0x310b, 0x07 },
+	{ 0x3110, 0x12 },
+	{ 0x31ed, 0x38 },
+	{ 0x3338, 0xd4 },
+	{ 0x3339, 0x40 },
+	{ 0x333a, 0x10 },
+	{ 0x333b, 0x00 },
+	{ 0x333c, 0xd4 },
+	{ 0x333d, 0x40 },
+	{ 0x333e, 0x10 },
+	{ 0x333f, 0x00 },
+	{ 0x336c, 0x1f },
+
+	/* INCK FREQ1 */
+	{ 0x3380, 0x20 },
+	{ 0x3381, 0x25 },
+
+
+	/* INCK FREQ2 */
+	{ 0x338d, 0xb4 },
+	{ 0x338e, 0x01 },
 };
 
 /* supported link frequencies */
@@ -279,7 +221,7 @@ static const s64 imx385_link_freq_2lanes[] = {
 	[FREQ_INDEX_720P] = 297000000,
 };
 static const s64 imx385_link_freq_4lanes[] = {
-	[FREQ_INDEX_1080P] = 222750000,
+	[FREQ_INDEX_1080P] = 185625000,
 	[FREQ_INDEX_720P] = 148500000,
 };
 
@@ -310,9 +252,10 @@ static const struct imx385_mode imx385_modes_2lanes[] = {
 		.height = 1080,
 		.hmax = 0x1130,
 		.link_freq_index = FREQ_INDEX_1080P,
-		.data = imx385_1080p_settings,
-		.data_size = ARRAY_SIZE(imx385_1080p_settings),
+		.data = imx385_1080p30_settings,
+		.data_size = ARRAY_SIZE(imx385_1080p30_settings),
 	},
+	/*
 	{
 		.width = 1280,
 		.height = 720,
@@ -320,7 +263,7 @@ static const struct imx385_mode imx385_modes_2lanes[] = {
 		.link_freq_index = FREQ_INDEX_720P,
 		.data = imx385_720p_settings,
 		.data_size = ARRAY_SIZE(imx385_720p_settings),
-	},
+	},*/
 };
 
 static const struct imx385_mode imx385_modes_4lanes[] = {
@@ -329,9 +272,10 @@ static const struct imx385_mode imx385_modes_4lanes[] = {
 		.height = 1080,
 		.hmax = 0x0898,
 		.link_freq_index = FREQ_INDEX_1080P,
-		.data = imx385_1080p_settings,
-		.data_size = ARRAY_SIZE(imx385_1080p_settings),
+		.data = imx385_1080p30_settings,
+		.data_size = ARRAY_SIZE(imx385_1080p30_settings),
 	},
+	/*
 	{
 		.width = 1280,
 		.height = 720,
@@ -339,7 +283,7 @@ static const struct imx385_mode imx385_modes_4lanes[] = {
 		.link_freq_index = FREQ_INDEX_720P,
 		.data = imx385_720p_settings,
 		.data_size = ARRAY_SIZE(imx385_720p_settings),
-	},
+	},*/
 };
 
 static inline const struct imx385_mode *imx385_modes_ptr(const struct imx385 *imx385)
@@ -523,6 +467,7 @@ static int imx385_enum_mbus_code(struct v4l2_subdev *sd,
 				 struct v4l2_subdev_pad_config *cfg,
 				 struct v4l2_subdev_mbus_code_enum *code)
 {
+	printk("%s() %d\r\n", __func__, __LINE__);
 	if (code->index >= ARRAY_SIZE(imx385_formats))
 		return -EINVAL;
 
@@ -535,6 +480,7 @@ static int imx385_enum_frame_size(struct v4l2_subdev *sd,
 				  struct v4l2_subdev_pad_config *cfg,
 				  struct v4l2_subdev_frame_size_enum *fse)
 {
+	printk("%s() %d\r\n", __func__, __LINE__);
 	const struct imx385 *imx385 = to_imx385(sd);
 	const struct imx385_mode *imx385_modes = imx385_modes_ptr(imx385);
 
@@ -549,6 +495,18 @@ static int imx385_enum_frame_size(struct v4l2_subdev *sd,
 	fse->max_width = imx385_modes[fse->index].width;
 	fse->min_height = imx385_modes[fse->index].height;
 	fse->max_height = imx385_modes[fse->index].height;
+
+	return 0;
+}
+
+static int imx385_enum_frame_interval(struct v4l2_subdev *sd,
+				      struct v4l2_subdev_pad_config *cfg,
+				      struct v4l2_subdev_frame_interval_enum *fie)
+{
+	printk("%s() %d\r\n", __func__, __LINE__);
+
+	fie->interval.numerator = 1;
+	fie->interval.denominator = 30;
 
 	return 0;
 }
@@ -727,11 +685,19 @@ static int imx385_start_streaming(struct imx385 *imx385)
 	int ret;
 
 	/* Set init register settings */
-	ret = imx385_set_register_array(imx385, imx385_global_init_settings,
+/*	ret = imx385_set_register_array(imx385, imx385_global_init_settings,
 					ARRAY_SIZE(
 						imx385_global_init_settings));
 	if (ret < 0) {
 		dev_err(imx385->dev, "Could not set init registers\n");
+		return ret;
+	}
+*/
+	/* Apply default values of current mode */
+	ret = imx385_set_register_array(imx385, imx385->current_mode->data,
+					imx385->current_mode->data_size);
+	if (ret < 0) {
+		dev_err(imx385->dev, "Could not set current mode\n");
 		return ret;
 	}
 
@@ -742,13 +708,7 @@ static int imx385_start_streaming(struct imx385 *imx385)
 		return ret;
 	}
 
-	/* Apply default values of current mode */
-	ret = imx385_set_register_array(imx385, imx385->current_mode->data,
-					imx385->current_mode->data_size);
-	if (ret < 0) {
-		dev_err(imx385->dev, "Could not set current mode\n");
-		return ret;
-	}
+
 	ret = imx385_set_hmax(imx385, imx385->current_mode->hmax);
 	if (ret < 0)
 		return ret;
@@ -910,6 +870,7 @@ static const struct v4l2_subdev_pad_ops imx385_pad_ops = {
 	.init_cfg = imx385_entity_init_cfg,
 	.enum_mbus_code = imx385_enum_mbus_code,
 	.enum_frame_size = imx385_enum_frame_size,
+	.enum_frame_interval = imx385_enum_frame_interval,
 	.get_fmt = imx385_get_fmt,
 	.set_fmt = imx385_set_fmt,
 };
