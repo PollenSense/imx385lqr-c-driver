@@ -175,7 +175,7 @@ static const struct imx385_regval imx385_12bit_settings[] = {
 };
 
 static const struct imx385_regval imx385_1080p30_settings[] = {
-	{ 0x3007, 0x10 },
+	{ 0x3007, 0x40 },
 	{ 0x3009, 0x02 },
 	{ 0x3012, 0x2c },
 	{ 0x3013, 0x01 },
@@ -186,6 +186,7 @@ static const struct imx385_regval imx385_1080p30_settings[] = {
 	{ 0x301c, 0x11 },
 	{ 0x3020, 0x02 }, //SHS1
 	{ 0x3021, 0x00 }, //SHS1
+	{ 0x3044, 0x01 },
 	{ 0x3046, 0x30 },
 	{ 0x3047, 0x38 },
 	{ 0x3049, 0x0a },
@@ -211,6 +212,26 @@ static const struct imx385_regval imx385_1080p30_settings[] = {
 	/* INCK FREQ2 */
 	{ 0x338d, 0xb4 },
 	{ 0x338e, 0x01 },
+
+	/* WINPH */
+	{ 0x303c, 0x0C },
+	{ 0x303d, 0x00 },
+
+	/* WINWH */
+	{ 0x303e, 0x80 },
+	{ 0x303f, 0x07 },
+
+	/* WINPV */
+	{ 0x3038,  0x08 },
+	{ 0x3039,  0x00 },
+
+	/* WINWV */
+	{ 0x303A, 0x38 },
+	{ 0x303B, 0x04 },
+
+	/* PIC_SIZE_V */
+	{ 0x3057, 0x38 },
+	{ 0x3058, 0x04 },
 };
 
 /* supported link frequencies */
@@ -506,7 +527,7 @@ static int imx385_enum_frame_interval(struct v4l2_subdev *sd,
 	printk("%s() %d\r\n", __func__, __LINE__);
 
 	fie->interval.numerator = 1;
-	fie->interval.denominator = 30;
+	fie->interval.denominator = 25;
 
 	return 0;
 }
