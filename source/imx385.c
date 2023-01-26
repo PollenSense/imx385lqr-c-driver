@@ -175,7 +175,7 @@ static const struct imx385_regval imx385_12bit_settings[] = {
 };
 
 static const struct imx385_regval imx385_1080p30_settings[] = {
-	{ 0x3007, 0x10 },
+	{ 0x3007, 0x40 },
 	{ 0x3009, 0x02 },
 	{ 0x3012, 0x2c },
 	{ 0x3013, 0x01 },
@@ -186,6 +186,7 @@ static const struct imx385_regval imx385_1080p30_settings[] = {
 	{ 0x301c, 0x11 },
 	{ 0x3020, 0x02 }, //SHS1
 	{ 0x3021, 0x00 }, //SHS1
+	{ 0x3044, 0x01 },
 	{ 0x3046, 0x30 },
 	{ 0x3047, 0x38 },
 	{ 0x3049, 0x0a },
@@ -211,6 +212,26 @@ static const struct imx385_regval imx385_1080p30_settings[] = {
 	/* INCK FREQ2 */
 	{ 0x338d, 0xb4 },
 	{ 0x338e, 0x01 },
+
+	/* WINPH */
+	{ 0x303c, 0x0C },
+	{ 0x303d, 0x00 },
+
+	/* WINWH */
+	{ 0x303e, 0x80 },
+	{ 0x303f, 0x07 },
+
+	/* WINPV */
+	{ 0x3038,  0x08 },
+	{ 0x3039,  0x00 },
+
+	/* WINWV */
+	{ 0x303A, 0x38 },
+	{ 0x303B, 0x04 },
+
+	/* PIC_SIZE_V */
+	{ 0x3057, 0x38 },
+	{ 0x3058, 0x04 },
 };
 
 /* supported link frequencies */
@@ -255,15 +276,6 @@ static const struct imx385_mode imx385_modes_2lanes[] = {
 		.data = imx385_1080p30_settings,
 		.data_size = ARRAY_SIZE(imx385_1080p30_settings),
 	},
-	/*
-	{
-		.width = 1280,
-		.height = 720,
-		.hmax = 0x19c8,
-		.link_freq_index = FREQ_INDEX_720P,
-		.data = imx385_720p_settings,
-		.data_size = ARRAY_SIZE(imx385_720p_settings),
-	},*/
 };
 
 static const struct imx385_mode imx385_modes_4lanes[] = {
@@ -275,15 +287,6 @@ static const struct imx385_mode imx385_modes_4lanes[] = {
 		.data = imx385_1080p30_settings,
 		.data_size = ARRAY_SIZE(imx385_1080p30_settings),
 	},
-	/*
-	{
-		.width = 1280,
-		.height = 720,
-		.hmax = 0x0ce4,
-		.link_freq_index = FREQ_INDEX_720P,
-		.data = imx385_720p_settings,
-		.data_size = ARRAY_SIZE(imx385_720p_settings),
-	},*/
 };
 
 static inline const struct imx385_mode *imx385_modes_ptr(const struct imx385 *imx385)
@@ -416,8 +419,6 @@ static int imx385_set_ctrl(struct v4l2_ctrl *ctrl)
 					     struct imx385, ctrls);
 	int ret = 0;
 
-	printk("%s() %d\r\n", __func__, __LINE__);
-
 	/* V4L2 controls values will be applied only when power is already up */
 	if (!pm_runtime_get_if_in_use(imx385->dev))
 		return 0;
@@ -454,8 +455,6 @@ static int imx385_set_ctrl(struct v4l2_ctrl *ctrl)
 
 	pm_runtime_put(imx385->dev);
 
-	printk("%s() %d\r\n", __func__, __LINE__);
-
 	return ret;
 }
 
@@ -467,7 +466,6 @@ static int imx385_enum_mbus_code(struct v4l2_subdev *sd,
 				 struct v4l2_subdev_pad_config *cfg,
 				 struct v4l2_subdev_mbus_code_enum *code)
 {
-	printk("%s() %d\r\n", __func__, __LINE__);
 	if (code->index >= ARRAY_SIZE(imx385_formats))
 		return -EINVAL;
 
@@ -480,7 +478,6 @@ static int imx385_enum_frame_size(struct v4l2_subdev *sd,
 				  struct v4l2_subdev_pad_config *cfg,
 				  struct v4l2_subdev_frame_size_enum *fse)
 {
-	printk("%s() %d\r\n", __func__, __LINE__);
 	const struct imx385 *imx385 = to_imx385(sd);
 	const struct imx385_mode *imx385_modes = imx385_modes_ptr(imx385);
 
@@ -503,10 +500,8 @@ static int imx385_enum_frame_interval(struct v4l2_subdev *sd,
 				      struct v4l2_subdev_pad_config *cfg,
 				      struct v4l2_subdev_frame_interval_enum *fie)
 {
-	printk("%s() %d\r\n", __func__, __LINE__);
-
 	fie->interval.numerator = 1;
-	fie->interval.denominator = 30;
+	fie->interval.denominator = 25;
 
 	return 0;
 }
@@ -517,8 +512,6 @@ static int imx385_get_fmt(struct v4l2_subdev *sd,
 {
 	struct imx385 *imx385 = to_imx385(sd);
 	struct v4l2_mbus_framefmt *framefmt;
-
-	printk("%s() %d\r\n", __func__, __LINE__);
 
 	mutex_lock(&imx385->lock);
 
@@ -531,8 +524,6 @@ static int imx385_get_fmt(struct v4l2_subdev *sd,
 	fmt->format = *framefmt;
 
 	mutex_unlock(&imx385->lock);
-
-	printk("%s() %d\r\n", __func__, __LINE__);
 
 	return 0;
 }
@@ -569,8 +560,6 @@ static int imx385_set_fmt(struct v4l2_subdev *sd,
 	const struct imx385_mode *mode;
 	struct v4l2_mbus_framefmt *format;
 	unsigned int i;
-
-	printk("%s() %d\r\n", __func__, __LINE__);
 
 	mutex_lock(&imx385->lock);
 
@@ -609,8 +598,6 @@ static int imx385_set_fmt(struct v4l2_subdev *sd,
 	*format = fmt->format;
 
 	mutex_unlock(&imx385->lock);
-
-	printk("%s() %d\r\n", __func__, __LINE__);
 
 	return 0;
 }
@@ -735,8 +722,6 @@ static int imx385_set_stream(struct v4l2_subdev *sd, int enable)
 	struct imx385 *imx385 = to_imx385(sd);
 	int ret = 0;
 
-	printk("%s() %d\r\n", __func__, __LINE__);
-
 	if (enable) {
 		ret = pm_runtime_get_sync(imx385->dev);
 		if (ret < 0) {
@@ -756,8 +741,6 @@ static int imx385_set_stream(struct v4l2_subdev *sd, int enable)
 	}
 
 unlock_and_return:
-
-	printk("%s() %d\r\n", __func__, __LINE__);
 	return ret;
 }
 
@@ -918,8 +901,6 @@ static int imx385_probe(struct i2c_client *client)
 	u32 xclk_freq;
 	s64 fq;
 	int ret;
-
-	printk("%s() %d\r\n", __func__, __LINE__);
 
 	imx385 = devm_kzalloc(dev, sizeof(*imx385), GFP_KERNEL);
 	if (!imx385)
@@ -1088,7 +1069,6 @@ static int imx385_probe(struct i2c_client *client)
 
 	v4l2_fwnode_endpoint_free(&ep);
 
-	printk("%s() %d\r\n", __func__, __LINE__);
 	return 0;
 
 free_entity:
@@ -1143,4 +1123,3 @@ MODULE_DESCRIPTION("Sony IMX385 CMOS Image Sensor Driver");
 MODULE_AUTHOR("FRAMOS GmbH");
 MODULE_AUTHOR("Manivannan Sadhasivam <manivannan.sadhasivam@linaro.org>");
 MODULE_LICENSE("GPL v2");
-

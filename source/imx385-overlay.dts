@@ -1,32 +1,95 @@
 // SPDX-License-Identifier: GPL-2.0-only
-// Definitions for IMX290 camera module on VC I2C bus
+// Definitions for imx385 camera module on VC I2C bus
 /dts-v1/;
 /plugin/;
 
 #include <dt-bindings/gpio/gpio.h>
-#include "imx385_327-overlay.dtsi"
 
 /{
 	compatible = "brcm,bcm2835";
 
-	// Fragment numbers deliberately high to avoid conflicts with the
-	// included imx385_327 overlay file.
-
-	fragment@101 {
-		target = <&cam_node>;
+	fragment@0 {
+		target = <&i2c0if>;
 		__overlay__ {
-			compatible = "sony,imx385";
+			status = "okay";
 		};
 	};
 
-	fragment@102 {
-		target = <&cam_node>;
-		__dormant__ {
-			compatible = "sony,imx385-mono";
+	clk_frag: fragment@1 {
+		target = <&cam1_clk>;
+		__overlay__ {
+			status = "okay";
+			clock-frequency = <37125000>;
+		};
+	};
+
+	fragment@2 {
+		target = <&i2c0mux>;
+		__overlay__ {
+			status = "okay";
+		};
+	};
+
+	i2c_frag: fragment@100 {
+		target = <&i2c_csi_dsi>;
+		__overlay__ {
+			#address-cells = <1>;
+			#size-cells = <0>;
+			status = "okay";
+
+			imx385: imx385@1a {
+				compatible = "sony,imx385";
+				reg = <0x1a>;
+				status = "okay";
+
+				clocks = <&cam1_clk>;
+				clock-names = "xclk";
+				clock-frequency = <37125000>;
+
+				vdda-supply = <&cam1_reg>;	/* 2.8v */
+				vdddo-supply = <&cam_dummy_reg>;	/* 1.8v */
+				vddd-supply = <&cam_dummy_reg>;	/* 1.5v */
+
+				rotation = <180>;
+				orientation = <2>;
+
+				port {
+					imx385_0: endpoint {
+						remote-endpoint = <&csi_ep>;
+						clock-lanes = <0>;
+						data-lanes = <1 2>;
+						clock-noncontinuous;
+						link-frequencies =
+							/bits/ 64 <445500000 297000000>;
+					};
+				};
+			};
+		};
+	};
+
+	csi_frag: fragment@101 {
+		target = <&csi1>;
+		csi: __overlay__ {
+			status = "okay";
+
+			port {
+				csi_ep: endpoint {
+					remote-endpoint = <&imx385_0>;
+					clock-lanes = <0>;
+					data-lanes = <1 2>;
+					clock-noncontinuous;
+				};
+			};
 		};
 	};
 
 	__overrides__ {
-		mono = <0>, "-101+102";
+		rotation = <&imx385>,"rotation:0";
+		orientation = <&imx385>,"orientation:0";
+		cam0 = <&i2c_frag>, "target:0=",<&i2c_vc>,
+		       <&csi_frag>, "target:0=",<&csi0>,
+		       <&clk_frag>, "target:0=",<&cam0_clk>,
+		       <&imx385>, "clocks:0=",<&cam0_clk>,
+		       <&imx385>, "VANA-supply:0=",<&cam0_reg>;
 	};
 };
