@@ -276,15 +276,6 @@ static const struct imx385_mode imx385_modes_2lanes[] = {
 		.data = imx385_1080p30_settings,
 		.data_size = ARRAY_SIZE(imx385_1080p30_settings),
 	},
-	/*
-	{
-		.width = 1280,
-		.height = 720,
-		.hmax = 0x19c8,
-		.link_freq_index = FREQ_INDEX_720P,
-		.data = imx385_720p_settings,
-		.data_size = ARRAY_SIZE(imx385_720p_settings),
-	},*/
 };
 
 static const struct imx385_mode imx385_modes_4lanes[] = {
@@ -296,15 +287,6 @@ static const struct imx385_mode imx385_modes_4lanes[] = {
 		.data = imx385_1080p30_settings,
 		.data_size = ARRAY_SIZE(imx385_1080p30_settings),
 	},
-	/*
-	{
-		.width = 1280,
-		.height = 720,
-		.hmax = 0x0ce4,
-		.link_freq_index = FREQ_INDEX_720P,
-		.data = imx385_720p_settings,
-		.data_size = ARRAY_SIZE(imx385_720p_settings),
-	},*/
 };
 
 static inline const struct imx385_mode *imx385_modes_ptr(const struct imx385 *imx385)
@@ -437,8 +419,6 @@ static int imx385_set_ctrl(struct v4l2_ctrl *ctrl)
 					     struct imx385, ctrls);
 	int ret = 0;
 
-	printk("%s() %d\r\n", __func__, __LINE__);
-
 	/* V4L2 controls values will be applied only when power is already up */
 	if (!pm_runtime_get_if_in_use(imx385->dev))
 		return 0;
@@ -475,8 +455,6 @@ static int imx385_set_ctrl(struct v4l2_ctrl *ctrl)
 
 	pm_runtime_put(imx385->dev);
 
-	printk("%s() %d\r\n", __func__, __LINE__);
-
 	return ret;
 }
 
@@ -488,7 +466,6 @@ static int imx385_enum_mbus_code(struct v4l2_subdev *sd,
 				 struct v4l2_subdev_pad_config *cfg,
 				 struct v4l2_subdev_mbus_code_enum *code)
 {
-	printk("%s() %d\r\n", __func__, __LINE__);
 	if (code->index >= ARRAY_SIZE(imx385_formats))
 		return -EINVAL;
 
@@ -501,7 +478,6 @@ static int imx385_enum_frame_size(struct v4l2_subdev *sd,
 				  struct v4l2_subdev_pad_config *cfg,
 				  struct v4l2_subdev_frame_size_enum *fse)
 {
-	printk("%s() %d\r\n", __func__, __LINE__);
 	const struct imx385 *imx385 = to_imx385(sd);
 	const struct imx385_mode *imx385_modes = imx385_modes_ptr(imx385);
 
@@ -524,8 +500,6 @@ static int imx385_enum_frame_interval(struct v4l2_subdev *sd,
 				      struct v4l2_subdev_pad_config *cfg,
 				      struct v4l2_subdev_frame_interval_enum *fie)
 {
-	printk("%s() %d\r\n", __func__, __LINE__);
-
 	fie->interval.numerator = 1;
 	fie->interval.denominator = 25;
 
@@ -539,8 +513,6 @@ static int imx385_get_fmt(struct v4l2_subdev *sd,
 	struct imx385 *imx385 = to_imx385(sd);
 	struct v4l2_mbus_framefmt *framefmt;
 
-	printk("%s() %d\r\n", __func__, __LINE__);
-
 	mutex_lock(&imx385->lock);
 
 	if (fmt->which == V4L2_SUBDEV_FORMAT_TRY)
@@ -552,8 +524,6 @@ static int imx385_get_fmt(struct v4l2_subdev *sd,
 	fmt->format = *framefmt;
 
 	mutex_unlock(&imx385->lock);
-
-	printk("%s() %d\r\n", __func__, __LINE__);
 
 	return 0;
 }
@@ -590,8 +560,6 @@ static int imx385_set_fmt(struct v4l2_subdev *sd,
 	const struct imx385_mode *mode;
 	struct v4l2_mbus_framefmt *format;
 	unsigned int i;
-
-	printk("%s() %d\r\n", __func__, __LINE__);
 
 	mutex_lock(&imx385->lock);
 
@@ -630,8 +598,6 @@ static int imx385_set_fmt(struct v4l2_subdev *sd,
 	*format = fmt->format;
 
 	mutex_unlock(&imx385->lock);
-
-	printk("%s() %d\r\n", __func__, __LINE__);
 
 	return 0;
 }
@@ -756,8 +722,6 @@ static int imx385_set_stream(struct v4l2_subdev *sd, int enable)
 	struct imx385 *imx385 = to_imx385(sd);
 	int ret = 0;
 
-	printk("%s() %d\r\n", __func__, __LINE__);
-
 	if (enable) {
 		ret = pm_runtime_get_sync(imx385->dev);
 		if (ret < 0) {
@@ -777,8 +741,6 @@ static int imx385_set_stream(struct v4l2_subdev *sd, int enable)
 	}
 
 unlock_and_return:
-
-	printk("%s() %d\r\n", __func__, __LINE__);
 	return ret;
 }
 
@@ -939,8 +901,6 @@ static int imx385_probe(struct i2c_client *client)
 	u32 xclk_freq;
 	s64 fq;
 	int ret;
-
-	printk("%s() %d\r\n", __func__, __LINE__);
 
 	imx385 = devm_kzalloc(dev, sizeof(*imx385), GFP_KERNEL);
 	if (!imx385)
@@ -1109,7 +1069,6 @@ static int imx385_probe(struct i2c_client *client)
 
 	v4l2_fwnode_endpoint_free(&ep);
 
-	printk("%s() %d\r\n", __func__, __LINE__);
 	return 0;
 
 free_entity:
@@ -1164,4 +1123,3 @@ MODULE_DESCRIPTION("Sony IMX385 CMOS Image Sensor Driver");
 MODULE_AUTHOR("FRAMOS GmbH");
 MODULE_AUTHOR("Manivannan Sadhasivam <manivannan.sadhasivam@linaro.org>");
 MODULE_LICENSE("GPL v2");
-
