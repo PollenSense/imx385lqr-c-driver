@@ -47,6 +47,15 @@
 #define IMX385_PGCTRL_THRU BIT(1)
 #define IMX385_PGCTRL_MODE(n) ((n) << 4)
 
+/* IMX385 native and active pixel array size. */
+#define IMX385_NATIVE_WIDTH		1952U
+#define IMX385_NATIVE_HEIGHT		1113U
+#define IMX385_PIXEL_ARRAY_LEFT		16U
+#define IMX385_PIXEL_ARRAY_TOP		8U
+#define IMX385_PIXEL_ARRAY_WIDTH	1920U
+#define IMX385_PIXEL_ARRAY_HEIGHT	1080U
+
+
 static const char * const imx385_supply_name[] = {
 	"vdda",
 	"vddd",
@@ -66,6 +75,8 @@ struct imx385_mode {
 	u32 hmax;
 	u32 vmax;
 	u8 link_freq_index;
+
+	struct v4l2_rect crop;
 
 	const struct imx385_regval *data;
 	u32 data_size;
@@ -285,6 +296,12 @@ static const struct imx385_mode imx385_modes_2lanes[] = {
 		.height = 1080,
 		.hmax = 0x1130,
 		.vmax = 0x0465,
+		.crop = {
+			.left = 16,
+			.top = 9,
+			.width = 1920,
+			.height = 1080
+		},
 		.link_freq_index = FREQ_INDEX_1080P,
 		.data = imx385_1080p30_settings,
 		.data_size = ARRAY_SIZE(imx385_1080p30_settings),
@@ -297,6 +314,12 @@ static const struct imx385_mode imx385_modes_4lanes[] = {
 		.height = 1080,
 		.hmax = 0x0898,
 		.vmax = 0x0465,
+		.crop = {
+			.left = 16,
+			.top = 9,
+			.width = 1920,
+			.height = 1080
+		},
 		.link_freq_index = FREQ_INDEX_1080P,
 		.data = imx385_1080p30_settings,
 		.data_size = ARRAY_SIZE(imx385_1080p30_settings),
@@ -690,6 +713,56 @@ static int imx385_set_fmt(struct v4l2_subdev *sd,
 	return 0;
 }
 
+static const struct v4l2_rect *
+__imx385_get_pad_crop(struct imx385 *imx385, struct v4l2_subdev_pad_config *cfg,
+		      unsigned int pad, enum v4l2_subdev_format_whence which)
+{
+	switch (which) {
+	case V4L2_SUBDEV_FORMAT_TRY:
+		return v4l2_subdev_get_try_crop(&imx385->sd, cfg, pad);
+	case V4L2_SUBDEV_FORMAT_ACTIVE:
+		return &imx385->current_mode->crop;
+	}
+
+	return NULL;
+}
+
+static int imx385_get_selection(struct v4l2_subdev *sd,
+				struct v4l2_subdev_pad_config *cfg,
+				struct v4l2_subdev_selection *sel)
+{
+	switch (sel->target) {
+	case V4L2_SEL_TGT_CROP: {
+		struct imx385 *imx385 = to_imx385(sd);
+
+		mutex_lock(&imx385->lock);
+		sel->r = *__imx385_get_pad_crop(imx385, cfg, sel->pad,
+						sel->which);
+		mutex_unlock(&imx385->lock);
+
+		return 0;
+	}
+
+	case V4L2_SEL_TGT_NATIVE_SIZE:
+		sel->r.top = 0;
+		sel->r.left = 0;
+		sel->r.width = IMX385_NATIVE_WIDTH;
+		sel->r.height = IMX385_NATIVE_HEIGHT;
+
+		return 0;
+
+	case V4L2_SEL_TGT_CROP_DEFAULT:
+	case V4L2_SEL_TGT_CROP_BOUNDS:
+		sel->r.top = IMX385_PIXEL_ARRAY_TOP;
+		sel->r.left = IMX385_PIXEL_ARRAY_LEFT;
+		sel->r.width = IMX385_PIXEL_ARRAY_WIDTH;
+		sel->r.height = IMX385_PIXEL_ARRAY_HEIGHT;
+
+		return 0;
+	}
+
+	return -EINVAL;
+}
 static int imx385_entity_init_cfg(struct v4l2_subdev *subdev,
 				  struct v4l2_subdev_pad_config *cfg)
 {
@@ -925,6 +998,7 @@ static const struct v4l2_subdev_pad_ops imx385_pad_ops = {
 	.enum_frame_interval = imx385_enum_frame_interval,
 	.get_fmt = imx385_get_fmt,
 	.set_fmt = imx385_set_fmt,
+	.get_selection = imx385_get_selection,
 };
 
 static const struct v4l2_subdev_ops imx385_subdev_ops = {
