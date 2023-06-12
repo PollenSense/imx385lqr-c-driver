@@ -104,6 +104,8 @@ struct imx385 {
 	struct v4l2_ctrl *hblank;
 	struct v4l2_ctrl *vblank;
 	struct v4l2_ctrl *exposure;
+	struct v4l2_ctrl *analog_gain;
+	struct v4l2_ctrl *digital_gain;
 
 	struct mutex lock;
 };
@@ -425,11 +427,12 @@ static int imx385_write_buffered_reg(struct imx385 *imx385, u16 address_low,
 	return ret;
 }
 
-static int imx385_set_gain(struct imx385 *imx385, u32 value)
+static int imx385_set_gain(struct imx385 *imx385)
 {
 	int ret;
+	u32 value = imx385->analog_gain->val + imx385->digital_gain->val;
 
-	ret = imx385_write_buffered_reg(imx385, IMX385_GAIN, 1, value);
+	ret = imx385_write_buffered_reg(imx385, IMX385_GAIN, 2, value);
 	if (ret)
 		dev_err(imx385->dev, "Unable to write gain\n");
 
@@ -526,8 +529,9 @@ static int imx385_set_ctrl(struct v4l2_ctrl *ctrl)
 		return 0;
 
 	switch (ctrl->id) {
+	case V4L2_CID_ANALOGUE_GAIN:
 	case V4L2_CID_GAIN:
-		ret = imx385_set_gain(imx385, ctrl->val);
+		ret = imx385_set_gain(imx385);
 		break;
 	case V4L2_CID_EXPOSURE:
 		ret = imx385_set_exposure(imx385, ctrl->val);
@@ -1153,8 +1157,10 @@ static int imx385_probe(struct i2c_client *client)
 
 	v4l2_ctrl_handler_init(&imx385->ctrls, 32);
 
-	v4l2_ctrl_new_std(&imx385->ctrls, &imx385_ctrl_ops,
-			  V4L2_CID_GAIN, 0, 72, 1, 0);
+	imx385->analog_gain = v4l2_ctrl_new_std(&imx385->ctrls, &imx385_ctrl_ops,
+			      V4L2_CID_ANALOGUE_GAIN, 0, 300, 1, 0);
+	imx385->digital_gain = v4l2_ctrl_new_std(&imx385->ctrls, &imx385_ctrl_ops,
+			       V4L2_CID_GAIN, 0, 420, 1, 0);
 	mode = imx385->current_mode;
 	imx385->hblank = v4l2_ctrl_new_std(&imx385->ctrls, &imx385_ctrl_ops,
 					   V4L2_CID_HBLANK,
