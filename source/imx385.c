@@ -30,8 +30,15 @@
 #define IMX385_BLKLEVEL_LOW 0x300a//
 #define IMX385_BLKLEVEL_HIGH 0x300b//
 #define IMX385_GAIN 0x3014//
+#define IMX385_EXPOSURE_MIN 1
+#define IMX385_EXPOSURE_STEP 1
+#define IMX385_EXPOSURE_LOW 0x3020
+#define IMX385_VMAX_LOW 0x3018
+#define IMX385_VMAX_MAX 0x1ffff
 #define IMX385_HMAX_LOW 0x301b //0x301c
 #define IMX385_HMAX_HIGH 0x301c //0x301d
+#define IMX385_HMAX_MIN 2200 
+#define IMX385_HMAX_MAX 0x3fff
 #define IMX385_PGCTRL 0x308c// overlaps with gain
 #define IMX385_PHY_LANE_NUM 0x3346 // 0x3407
 #define IMX385_CSI_LANE_MODE 0x337F// 0x3443
@@ -57,6 +64,7 @@ struct imx385_mode {
 	u32 width;
 	u32 height;
 	u32 hmax;
+	u32 vmax;
 	u8 link_freq_index;
 
 	const struct imx385_regval *data;
@@ -69,6 +77,7 @@ struct imx385 {
 	struct regmap *regmap;
 	u8 nlanes;
 	u8 bpp;
+	u16 hmax_min;
 
 	struct v4l2_subdev sd;
 	struct media_pad pad;
@@ -81,6 +90,9 @@ struct imx385 {
 	struct v4l2_ctrl_handler ctrls;
 	struct v4l2_ctrl *link_freq;
 	struct v4l2_ctrl *pixel_rate;
+	struct v4l2_ctrl *hblank;
+	struct v4l2_ctrl *vblank;
+	struct v4l2_ctrl *exposure;
 
 	struct mutex lock;
 };
@@ -272,6 +284,7 @@ static const struct imx385_mode imx385_modes_2lanes[] = {
 		.width = 1920,
 		.height = 1080,
 		.hmax = 0x1130,
+		.vmax = 0x0465,
 		.link_freq_index = FREQ_INDEX_1080P,
 		.data = imx385_1080p30_settings,
 		.data_size = ARRAY_SIZE(imx385_1080p30_settings),
@@ -283,6 +296,7 @@ static const struct imx385_mode imx385_modes_4lanes[] = {
 		.width = 1920,
 		.height = 1080,
 		.hmax = 0x0898,
+		.vmax = 0x0465,
 		.link_freq_index = FREQ_INDEX_1080P,
 		.data = imx385_1080p30_settings,
 		.data_size = ARRAY_SIZE(imx385_1080p30_settings),
@@ -399,6 +413,71 @@ static int imx385_set_gain(struct imx385 *imx385, u32 value)
 	return ret;
 }
 
+static int imx385_set_exposure(struct imx385 *imx385, u32 value)
+{
+	u32 exposure = (imx385->current_mode->height + imx385->vblank->val) -
+						value - 1;
+	int ret;
+
+	ret = imx385_write_buffered_reg(imx385, IMX385_EXPOSURE_LOW, 3,
+					exposure);
+	if (ret)
+		dev_err(imx385->dev, "Unable to write exposure\n");
+
+	return ret;
+}
+
+static int imx385_set_hmax(struct imx385 *imx385, u32 val)
+{
+	int ret;
+
+	ret = imx385_write_reg(imx385, IMX385_HMAX_LOW, (val & 0xff));
+	if (ret) {
+		dev_err(imx385->dev, "Error setting HMAX register\n");
+		return ret;
+	}
+
+	ret = imx385_write_reg(imx385, IMX385_HMAX_HIGH, ((val >> 8) & 0xff));
+	if (ret) {
+		dev_err(imx385->dev, "Error setting HMAX register\n");
+		return ret;
+	}
+
+	return 0;
+}
+
+
+static int imx385_set_vmax(struct imx385 *imx385, u32 val)
+{
+	u32 vmax = val + imx385->current_mode->height;
+	int ret;
+
+	ret = imx385_write_buffered_reg(imx385, IMX385_VMAX_LOW, 3,
+					vmax);
+	if (ret)
+		dev_err(imx385->dev, "Unable to write vmax\n");
+
+	/*
+	 * Changing vblank changes the allowed range for exposure.
+	 * We don't supply the current exposure as default here as it
+	 * may lie outside the new range. We will reset it just below.
+	 */
+	__v4l2_ctrl_modify_range(imx385->exposure,
+				 IMX385_EXPOSURE_MIN,
+				 vmax - 2,
+				 IMX385_EXPOSURE_STEP,
+				 vmax - 2);
+
+	/*
+	 * Becuse of the way exposure works for this sensor, updating
+	 * vblank causes the effective exposure to change, so we must
+	 * set it back to the "new" correct value.
+	 */
+	imx385_set_exposure(imx385, imx385->exposure->val);
+
+	return ret;
+}
+
 /* Stop streaming */
 static int imx385_stop_streaming(struct imx385 *imx385)
 {
@@ -426,6 +505,15 @@ static int imx385_set_ctrl(struct v4l2_ctrl *ctrl)
 	switch (ctrl->id) {
 	case V4L2_CID_GAIN:
 		ret = imx385_set_gain(imx385, ctrl->val);
+		break;
+	case V4L2_CID_EXPOSURE:
+		ret = imx385_set_exposure(imx385, ctrl->val);
+		break;
+	case V4L2_CID_HBLANK:
+		ret = imx385_set_hmax(imx385, ctrl->val);
+		break;
+	case V4L2_CID_VBLANK:
+		ret = imx385_set_vmax(imx385, ctrl->val);
 		break;
 	case V4L2_CID_TEST_PATTERN:
 		if (ctrl->val) {
@@ -642,25 +730,6 @@ static int imx385_write_current_format(struct imx385 *imx385)
 	default:
 		dev_err(imx385->dev, "Unknown pixel format\n");
 		return -EINVAL;
-	}
-
-	return 0;
-}
-
-static int imx385_set_hmax(struct imx385 *imx385, u32 val)
-{
-	int ret;
-
-	ret = imx385_write_reg(imx385, IMX385_HMAX_LOW, (val & 0xff));
-	if (ret) {
-		dev_err(imx385->dev, "Error setting HMAX register\n");
-		return ret;
-	}
-
-	ret = imx385_write_reg(imx385, IMX385_HMAX_HIGH, ((val >> 8) & 0xff));
-	if (ret) {
-		dev_err(imx385->dev, "Error setting HMAX register\n");
-		return ret;
 	}
 
 	return 0;
@@ -898,6 +967,7 @@ static int imx385_probe(struct i2c_client *client)
 		.bus_type = V4L2_MBUS_CSI2_DPHY
 	};
 	struct imx385 *imx385;
+	const struct imx385_mode *mode;
 	u32 xclk_freq;
 	s64 fq;
 	int ret;
@@ -938,6 +1008,8 @@ static int imx385_probe(struct i2c_client *client)
 	}
 
 	dev_dbg(dev, "Using %u data lanes\n", imx385->nlanes);
+
+	imx385->hmax_min = IMX385_HMAX_MIN;
 
 	if (!ep.nr_of_link_frequencies) {
 		dev_err(dev, "link-frequency property not found in DT\n");
@@ -1005,11 +1077,29 @@ static int imx385_probe(struct i2c_client *client)
 	 */
 	imx385_entity_init_cfg(&imx385->sd, NULL);
 
-	v4l2_ctrl_handler_init(&imx385->ctrls, 4);
+	v4l2_ctrl_handler_init(&imx385->ctrls, 32);
 
 	v4l2_ctrl_new_std(&imx385->ctrls, &imx385_ctrl_ops,
 			  V4L2_CID_GAIN, 0, 72, 1, 0);
+	mode = imx385->current_mode;
+	imx385->hblank = v4l2_ctrl_new_std(&imx385->ctrls, &imx385_ctrl_ops,
+					   V4L2_CID_HBLANK,
+					   imx385->hmax_min - mode->width,
+					   IMX385_HMAX_MAX - mode->width, 1,
+					   mode->hmax - mode->width);
 
+	imx385->vblank = v4l2_ctrl_new_std(&imx385->ctrls, &imx385_ctrl_ops,
+					   V4L2_CID_VBLANK,
+					   mode->vmax - mode->height,
+					   IMX385_VMAX_MAX - mode->height, 1,
+					   mode->vmax - mode->height);
+
+	imx385->exposure = v4l2_ctrl_new_std(&imx385->ctrls, &imx385_ctrl_ops,
+					     V4L2_CID_EXPOSURE,
+					     IMX385_EXPOSURE_MIN,
+					     mode->vmax - 2,
+					     IMX385_EXPOSURE_STEP,
+					     mode->vmax - 2);
 	imx385->link_freq =
 		v4l2_ctrl_new_int_menu(&imx385->ctrls, &imx385_ctrl_ops,
 				       V4L2_CID_LINK_FREQ,
