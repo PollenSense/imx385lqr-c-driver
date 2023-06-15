@@ -1166,7 +1166,7 @@ static int imx385_probe(struct i2c_client *client)
 					   V4L2_CID_HBLANK,
 					   imx385->hmax_min - mode->width,
 					   IMX385_HMAX_MAX - mode->width, 1,
-					   mode->hmax - mode->width);
+					   mode->hmax);
 
 	imx385->vblank = v4l2_ctrl_new_std(&imx385->ctrls, &imx385_ctrl_ops,
 					   V4L2_CID_VBLANK,
