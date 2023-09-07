@@ -16,6 +16,7 @@
 #include <linux/pm_runtime.h>
 #include <linux/regmap.h>
 #include <linux/regulator/consumer.h>
+#include <linux/version.h>
 #include <media/media-entity.h>
 #include <media/v4l2-ctrls.h>
 #include <media/v4l2-device.h>
@@ -578,7 +579,11 @@ static const struct v4l2_ctrl_ops imx385_ctrl_ops = {
 };
 
 static int imx385_enum_mbus_code(struct v4l2_subdev *sd,
-				 struct v4l2_subdev_pad_config *cfg,
+#if LINUX_VERSION_CODE <= KERNEL_VERSION(5,13,0)
+			 	 struct v4l2_subdev_pad_config *cfg,
+#else
+				 struct v4l2_subdev_state *state,
+#endif
 				 struct v4l2_subdev_mbus_code_enum *code)
 {
 	if (code->index >= ARRAY_SIZE(imx385_formats))
@@ -590,7 +595,11 @@ static int imx385_enum_mbus_code(struct v4l2_subdev *sd,
 }
 
 static int imx385_enum_frame_size(struct v4l2_subdev *sd,
-				  struct v4l2_subdev_pad_config *cfg,
+#if LINUX_VERSION_CODE <= KERNEL_VERSION(5,13,0)
+			 	  struct v4l2_subdev_pad_config *cfg,
+#else
+				  struct v4l2_subdev_state *state,
+#endif
 				  struct v4l2_subdev_frame_size_enum *fse)
 {
 	const struct imx385 *imx385 = to_imx385(sd);
@@ -612,7 +621,11 @@ static int imx385_enum_frame_size(struct v4l2_subdev *sd,
 }
 
 static int imx385_enum_frame_interval(struct v4l2_subdev *sd,
+#if LINUX_VERSION_CODE <= KERNEL_VERSION(5,13,0)
 				      struct v4l2_subdev_pad_config *cfg,
+#else
+				      struct v4l2_subdev_state *state,
+#endif
 				      struct v4l2_subdev_frame_interval_enum *fie)
 {
 	fie->interval.numerator = 1;
@@ -622,7 +635,11 @@ static int imx385_enum_frame_interval(struct v4l2_subdev *sd,
 }
 
 static int imx385_get_fmt(struct v4l2_subdev *sd,
+#if LINUX_VERSION_CODE <= KERNEL_VERSION(5,13,0)
 			  struct v4l2_subdev_pad_config *cfg,
+#else
+			  struct v4l2_subdev_state *state,
+#endif
 			  struct v4l2_subdev_format *fmt)
 {
 	struct imx385 *imx385 = to_imx385(sd);
@@ -631,8 +648,13 @@ static int imx385_get_fmt(struct v4l2_subdev *sd,
 	mutex_lock(&imx385->lock);
 
 	if (fmt->which == V4L2_SUBDEV_FORMAT_TRY)
+#if LINUX_VERSION_CODE <= KERNEL_VERSION(5,13,0)
 		framefmt = v4l2_subdev_get_try_format(&imx385->sd, cfg,
 						      fmt->pad);
+#else
+		framefmt = v4l2_subdev_get_try_format(&imx385->sd, state,
+						      fmt->pad);
+#endif
 	else
 		framefmt = &imx385->current_format;
 
@@ -668,8 +690,12 @@ static u64 imx385_calc_pixel_rate(struct imx385 *imx385)
 }
 
 static int imx385_set_fmt(struct v4l2_subdev *sd,
+#if LINUX_VERSION_CODE <= KERNEL_VERSION(5,13,0)
 			  struct v4l2_subdev_pad_config *cfg,
-		      struct v4l2_subdev_format *fmt)
+#else
+			  struct v4l2_subdev_state *state,
+#endif
+			  struct v4l2_subdev_format *fmt)
 {
 	struct imx385 *imx385 = to_imx385(sd);
 	const struct imx385_mode *mode;
@@ -696,7 +722,11 @@ static int imx385_set_fmt(struct v4l2_subdev *sd,
 	fmt->format.field = V4L2_FIELD_NONE;
 
 	if (fmt->which == V4L2_SUBDEV_FORMAT_TRY) {
+#if LINUX_VERSION_CODE <= KERNEL_VERSION(5,13,0)
 		format = v4l2_subdev_get_try_format(sd, cfg, fmt->pad);
+#else
+		format = v4l2_subdev_get_try_format(sd, state, fmt->pad);
+#endif
 	} else {
 		format = &imx385->current_format;
 		imx385->current_mode = mode;
@@ -718,12 +748,21 @@ static int imx385_set_fmt(struct v4l2_subdev *sd,
 }
 
 static const struct v4l2_rect *
+#if LINUX_VERSION_CODE <= KERNEL_VERSION(5,13,0)
 __imx385_get_pad_crop(struct imx385 *imx385, struct v4l2_subdev_pad_config *cfg,
 		      unsigned int pad, enum v4l2_subdev_format_whence which)
+#else
+__imx385_get_pad_crop(struct imx385 *imx385, struct v4l2_subdev_state *state,
+		      unsigned int pad, enum v4l2_subdev_format_whence which)
+#endif
 {
 	switch (which) {
 	case V4L2_SUBDEV_FORMAT_TRY:
+#if LINUX_VERSION_CODE <= KERNEL_VERSION(5,13,0)
 		return v4l2_subdev_get_try_crop(&imx385->sd, cfg, pad);
+#else
+		return v4l2_subdev_get_try_crop(&imx385->sd, state, pad);
+#endif
 	case V4L2_SUBDEV_FORMAT_ACTIVE:
 		return &imx385->current_mode->crop;
 	}
@@ -732,7 +771,11 @@ __imx385_get_pad_crop(struct imx385 *imx385, struct v4l2_subdev_pad_config *cfg,
 }
 
 static int imx385_get_selection(struct v4l2_subdev *sd,
+#if LINUX_VERSION_CODE <= KERNEL_VERSION(5,13,0)
 				struct v4l2_subdev_pad_config *cfg,
+#else
+				struct v4l2_subdev_state *state,
+#endif
 				struct v4l2_subdev_selection *sel)
 {
 	switch (sel->target) {
@@ -740,8 +783,13 @@ static int imx385_get_selection(struct v4l2_subdev *sd,
 		struct imx385 *imx385 = to_imx385(sd);
 
 		mutex_lock(&imx385->lock);
+#if LINUX_VERSION_CODE <= KERNEL_VERSION(5,13,0)
 		sel->r = *__imx385_get_pad_crop(imx385, cfg, sel->pad,
 						sel->which);
+#else
+		sel->r = *__imx385_get_pad_crop(imx385, state, sel->pad,
+						sel->which);
+#endif
 		mutex_unlock(&imx385->lock);
 
 		return 0;
@@ -768,15 +816,27 @@ static int imx385_get_selection(struct v4l2_subdev *sd,
 	return -EINVAL;
 }
 static int imx385_entity_init_cfg(struct v4l2_subdev *subdev,
-				  struct v4l2_subdev_pad_config *cfg)
+#if LINUX_VERSION_CODE <= KERNEL_VERSION(5,13,0)
+				struct v4l2_subdev_pad_config *cfg)
+#else
+				struct v4l2_subdev_state *state)
+#endif
 {
 	struct v4l2_subdev_format fmt = { 0 };
 
+#if LINUX_VERSION_CODE <= KERNEL_VERSION(5,13,0)
 	fmt.which = cfg ? V4L2_SUBDEV_FORMAT_TRY : V4L2_SUBDEV_FORMAT_ACTIVE;
+#else
+	fmt.which = state ? V4L2_SUBDEV_FORMAT_TRY : V4L2_SUBDEV_FORMAT_ACTIVE;
+#endif
 	fmt.format.width = 1920;
 	fmt.format.height = 1080;
 
+#if LINUX_VERSION_CODE <= KERNEL_VERSION(5,13,0)
 	imx385_set_fmt(subdev, cfg, &fmt);
+#else
+	imx385_set_fmt(subdev, state, &fmt);
+#endif
 
 	return 0;
 }
