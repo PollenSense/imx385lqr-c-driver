@@ -1312,7 +1312,11 @@ free_err:
 	return ret;
 }
 
+#if LINUX_VERSION_CODE <= KERNEL_VERSION(6,0,0)
 static int imx385_remove(struct i2c_client *client)
+#else
+static void imx385_remove(struct i2c_client *client)
+#endif
 {
 	struct v4l2_subdev *sd = i2c_get_clientdata(client);
 	struct imx385 *imx385 = to_imx385(sd);
@@ -1328,7 +1332,9 @@ static int imx385_remove(struct i2c_client *client)
 		imx385_power_off(imx385->dev);
 	pm_runtime_set_suspended(imx385->dev);
 
+#if LINUX_VERSION_CODE <= KERNEL_VERSION(6,0,0)
 	return 0;
+#endif
 }
 
 static const struct of_device_id imx385_of_match[] = {
